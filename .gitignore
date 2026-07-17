@@ -1,0 +1,29 @@
+# Dependencies and frontend output
+node_modules/
+dist/
+
+# Rust and Tauri output
+src-tauri/target/
+src-tauri/gen/
+
+# TypeScript build state
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# Local test and visual-review artifacts
+output/
+.playwright-cli/
+ChatGPT Image*.png
+
+# Logs and local environment
+*.log
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
