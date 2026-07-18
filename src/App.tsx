@@ -38,14 +38,16 @@ type KeyButtonProps = {
   className?: string;
   icon?: React.ReactNode;
   accent?: "white" | "red" | "blue";
+  disabled?: boolean;
   onClick: () => void;
 };
 
-function KeyButton({ label, shortcut, className = "", icon, accent = "white", onClick }: KeyButtonProps) {
+function KeyButton({ label, shortcut, className = "", icon, accent = "white", disabled = false, onClick }: KeyButtonProps) {
   return (
     <button
       className={`key key-${accent} ${className}`}
       onClick={onClick}
+      disabled={disabled}
       aria-label={`${label}, ${shortcut}`}
       title={`${label} - ${shortcut}`}
     >
@@ -546,13 +548,13 @@ function App() {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.key === "F1") { event.preventDefault(); togglePower(); }
-      if (event.key === "F2") { event.preventDefault(); toggleLevel(); }
-      if (event.key === "F3") { event.preventDefault(); cycleModel(event.shiftKey ? -1 : 1); }
-      if (event.key === "F4") { event.preventDefault(); checkUpdates(); }
-      if (event.key === "F5") { event.preventDefault(); sync(); }
-      if (event.ctrlKey && event.key === "Enter") { event.preventDefault(); void resumeClaude(); }
+      if (isOn && event.key === "F2") { event.preventDefault(); toggleLevel(); }
+      if (isOn && event.key === "F3") { event.preventDefault(); cycleModel(event.shiftKey ? -1 : 1); }
+      if (isOn && event.key === "F4") { event.preventDefault(); checkUpdates(); }
+      if (isOn && event.key === "F5") { event.preventDefault(); sync(); }
+      if (isOn && event.ctrlKey && event.key === "Enter") { event.preventDefault(); void resumeClaude(); }
       if (resumePickerOpen && (event.key === "Enter" || event.key === "Escape")) setResumePickerOpen(false);
-      if (event.ctrlKey && event.key.toLowerCase() === "r") { event.preventDefault(); setTask("RETRYING"); if (isOn && inTauri()) void invoke("write_terminal", { input: "\u001b[A\r" }); }
+      if (isOn && event.ctrlKey && event.key.toLowerCase() === "r") { event.preventDefault(); setTask("RETRYING"); if (inTauri()) void invoke("write_terminal", { input: "\u001b[A\r" }); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -588,13 +590,13 @@ function App() {
           </div>
           <div className="control-bank">
             <div className="mini-switch">
-              <button className={`toggle-switch ${level === "HIGH" ? "toggle-on" : ""}`} onClick={toggleLevel} aria-label={`Effort level ${level}`} title="Profile - F2">
+              <button className={`toggle-switch ${level === "HIGH" ? "toggle-on" : ""}`} onClick={toggleLevel} disabled={!isOn} aria-label={`Effort level ${level}`} title="Profile - F2">
                 <span className="toggle-track"><i /></span>
               </button>
               <span>LEVEL</span><b>{level}</b>
             </div>
             <div className="mini-switch">
-              <button className={`toggle-switch ${permission === "AUTO" ? "toggle-on" : ""}`} onClick={togglePermission} aria-label={`Permission mode ${permission}`} title="Permission mode ASK / AUTO">
+              <button className={`toggle-switch ${permission === "AUTO" ? "toggle-on" : ""}`} onClick={togglePermission} disabled={!isOn} aria-label={`Permission mode ${permission}`} title="Permission mode ASK / AUTO">
                 <span className="toggle-track"><i /></span>
               </button>
               <span>PERMISSION</span><b>{permission}</b>
@@ -604,8 +606,8 @@ function App() {
 
           <div className="top-keys">
             <KeyButton label="POWER" shortcut="F1" icon={<DeckIcon name="power" />} className={`power-key power-${power.toLowerCase()}`} onClick={togglePower} />
-            <KeyButton label="UPDATE" shortcut="F4" icon={<DeckIcon name="update" />} accent="blue" className={`update-${update.toLowerCase()}`} onClick={checkUpdates} />
-            <KeyButton label="SYNC" shortcut="F5" icon={<DeckIcon name="sync" />} accent="red" className={task === "READING USAGE" ? "key-busy" : task === "USAGE UPDATED" ? "key-success" : ""} onClick={sync} />
+            <KeyButton label="UPDATE" shortcut="F4" icon={<DeckIcon name="update" />} accent="blue" className={`update-${update.toLowerCase()}`} disabled={!isOn} onClick={checkUpdates} />
+            <KeyButton label="SYNC" shortcut="F5" icon={<DeckIcon name="sync" />} accent="red" className={task === "READING USAGE" ? "key-busy" : task === "USAGE UPDATED" ? "key-success" : ""} disabled={!isOn} onClick={sync} />
           </div>
 
           <div className="model-control">
@@ -614,6 +616,7 @@ function App() {
             </div>
             <button
               className="knob"
+              disabled={!isOn}
               onPointerDown={handleKnobPointerDown}
               onPointerMove={handleKnobPointerMove}
               onPointerUp={handleKnobPointerUp}
@@ -634,10 +637,10 @@ function App() {
           </div>
 
           <div className="bottom-keys">
-            <KeyButton label="DISCARD" shortcut="DEL" className={dialog === "discard" ? "key-danger-active" : ""} onClick={previewDiscard} />
-            <KeyButton label="RETRY" shortcut="CTRL+R" className={task === "RETRYING" ? "key-busy" : ""} onClick={() => { setTask("RETRYING"); if (isOn && inTauri()) void invoke("write_terminal", { input: "\u001b[A\r" }); }} />
-            <KeyButton label="" shortcut="V HOLD" icon={<DeckIcon name="mic" />} className={listening ? "is-listening" : ""} onClick={toggleMicrophone} />
-            <KeyButton label="RESUME" shortcut="CTRL+ENTER" className={`run-key ${resumePickerOpen ? "key-busy" : isOn ? "key-success" : "key-disabled-state"}`} onClick={() => void resumeClaude()} />
+            <KeyButton label="DISCARD" shortcut="DEL" className={dialog === "discard" ? "key-danger-active" : ""} disabled={!isOn} onClick={previewDiscard} />
+            <KeyButton label="RETRY" shortcut="CTRL+R" className={task === "RETRYING" ? "key-busy" : ""} disabled={!isOn} onClick={() => { setTask("RETRYING"); if (isOn && inTauri()) void invoke("write_terminal", { input: "\u001b[A\r" }); }} />
+            <KeyButton label="" shortcut="V HOLD" icon={<DeckIcon name="mic" />} className={listening ? "is-listening" : ""} disabled={!isOn} onClick={toggleMicrophone} />
+            <KeyButton label="RESUME" shortcut="CTRL+ENTER" className={`run-key ${resumePickerOpen ? "key-busy" : isOn ? "key-success" : ""}`} disabled={!isOn} onClick={() => void resumeClaude()} />
             <div className="usage-gauges" aria-label="Claude usage gauges">
               {[
                 ["CONTEXT", usage.context],

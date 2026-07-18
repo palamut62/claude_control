@@ -27,3 +27,22 @@ ChatGPT Image*.png
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local AI tool instructions and state
+CLAUDE.md
+.claude/
+AGENTS.md
+.agents/
+.codex/
+GEMINI.md
+.gemini/
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.aider*
+.opencode/
+opencode.json
+.github/copilot-instructions.md
+.specstory/
+.continue/

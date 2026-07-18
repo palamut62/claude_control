@@ -107,6 +107,9 @@ button { color: inherit; }
 }
 .key:hover { filter: brightness(1.16); }
 .key:active { transform: translateY(6px); box-shadow: inset 0 2px 4px #111, 0 2px 0 #111317, 0 4px 8px rgba(0,0,0,.45); }
+.key:disabled, .toggle-switch:disabled, .knob:disabled { filter: grayscale(.8) brightness(.58); cursor: not-allowed; opacity: .62; }
+.key:disabled:hover, .toggle-switch:disabled:hover, .knob:disabled:hover { filter: grayscale(.8) brightness(.58); }
+.key:disabled:active { transform: none; box-shadow: inset 0 2px 1px rgba(255,255,255,.11), inset 0 -3px 5px rgba(0,0,0,.45), 0 8px 0 #111317, 0 10px 0 #111b2b, 0 13px 17px rgba(0,0,0,.34); }
 .key-main { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 19px; font-weight: 500; white-space: nowrap; letter-spacing: .02em; }
 .key-main svg { width: 29px; height: 29px; stroke-width: 2.4; }
 .key-shortcut { position: absolute; right: 11px; bottom: 6px; font: 600 9px/1 "IBM Plex Mono", monospace; opacity: .67; letter-spacing: .03em; }
