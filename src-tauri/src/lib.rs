@@ -373,6 +373,7 @@ pub fn run() {
         let _ = window.set_focus();
       }
     }))
+    .plugin(tauri_plugin_dialog::init())
     .manage(AppState::default())
     .setup(|app| {
       if cfg!(debug_assertions) {

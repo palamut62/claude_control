@@ -3,7 +3,7 @@
 <p align="center"><strong>A tactile Windows control surface for Claude Code.</strong></p>
 
 <p align="center">
-  Run Claude Code in a real embedded terminal, switch models and permissions instantly, resume previous sessions, and monitor context limits from a focused hardware-inspired desktop interface.
+  Run Claude Code in a real embedded terminal, switch projects, models, permissions, and display modes, resume previous sessions, and monitor context limits from a focused hardware-inspired desktop interface.
 </p>
 
 <p align="center">
@@ -71,10 +71,12 @@ It is designed for developers who want:
 ### Live session controls
 
 - **POWER** starts or stops Claude Code in the selected project.
+- Session controls remain physically and functionally disabled while POWER is off, preventing accidental configuration or terminal actions.
 - **RESUME** opens Claude Code's session picker and cycles through previous conversations.
 - **RETRY** repeats the previous terminal entry.
 - **UPDATE** runs the official Claude Code update command.
 - **SYNC** refreshes context and rate-limit usage data.
+- **PROJECT** opens the Windows folder picker, changes the active working path, and restarts Claude Code in the selected folder.
 
 ### Model, effort, and permissions
 
@@ -93,10 +95,12 @@ It is designed for developers who want:
 - Displays five-hour and seven-day rate-limit usage.
 - Captures Claude Code notifications through a temporary local hook.
 - Shows application, update, model, power, and synchronization messages on the calculator-style LCD.
+- Animates the status LCD while startup, shutdown, updates, synchronization, retries, resumes, and project changes are in progress.
 
 ### Desktop-focused interaction
 
 - Hardware-inspired brushed-metal interface.
+- NORMAL and calculator-style LCD terminal display modes with a persistent hardware toggle.
 - Rotary model selector with pointer drag, click, mouse-wheel, and keyboard input.
 - Visual states for active, busy, successful, stopped, and failed operations.
 - Optional speech recognition through the Windows WebView browser API.
@@ -116,13 +120,17 @@ It is designed for developers who want:
 | POWER | Start or stop Claude Code | Reflects OFF, STARTING, ON, STOPPING, and error states |
 | LEVEL | Change effort | Sends LOW or HIGH to Claude Code |
 | PERMISSION | Change approval behavior | ASK uses normal permissions; AUTO enables full bypass mode |
+| DISPLAY | Change terminal appearance | Switches between NORMAL and calculator-style LCD modes |
 | MODEL SWITCHER | Select a Claude model | Supports click, drag, wheel, F3, and Shift+F3 |
 | UPDATE | Update Claude Code | Runs `claude update` using the detected CLI installation |
 | SYNC | Refresh usage | Reads current context and rate-limit values |
 | DISCARD | Review and restore changes | Uses Git and does not delete untracked files |
 | RETRY | Repeat the previous entry | Sends Arrow Up and Enter to the active terminal |
 | Microphone | Voice input | Uses Web Speech recognition when the WebView supports it |
+| PROJECT | Change the working path | Opens the Windows folder picker, then restarts Claude Code in the selected folder |
 | RESUME | Continue previous work | Opens `/resume`, cycles selections, and continues sessions |
+
+Except for POWER and the window close control, session and configuration controls are disabled while Claude Code is off.
 
 ## Tech Stack
 
@@ -224,6 +232,7 @@ ClaudeDeck currently requires no `.env` file and no API key of its own.
 | Selected model | Browser local storage | Restored on launch |
 | Effort level | Browser local storage | LOW or HIGH |
 | Permission mode | Browser local storage | ASK or AUTO |
+| Display mode | Browser local storage | NORMAL or LCD |
 | Usage snapshot | Browser local storage | Refreshed from Claude Code status data |
 
 During a Claude session, ClaudeDeck creates temporary helper files under the Windows temporary directory to capture Claude Code status-line usage and notification hooks. These files contain local runtime state and are not committed to the repository.
@@ -232,13 +241,15 @@ During a Claude session, ClaudeDeck creates temporary helper files under the Win
 
 1. Launch ClaudeDeck.
 2. Press **POWER** or `F1`.
-3. If no project is configured, enter the full project folder path in the project dialog.
+3. If no project is configured, select its folder in the Windows folder picker.
 4. Choose the desired model with the rotary selector.
 5. Set LOW/HIGH effort and ASK/AUTO permissions.
 6. Work directly in the embedded Claude Code terminal.
 7. Drop a file onto the terminal to insert its absolute path.
 8. Press **SYNC** to refresh usage gauges.
 9. Press **RESUME** to browse and continue earlier Claude Code sessions.
+10. Press **PROJECT** to choose another folder from the PC; ClaudeDeck restarts Claude Code in that project automatically.
+11. Use the **DISPLAY** toggle to switch between the standard terminal and calculator-style LCD presentation.
 
 ## Keyboard Shortcuts
 
@@ -369,4 +380,3 @@ ClaudeDeck is available under the [MIT License](LICENSE).
 - [Tauri](https://tauri.app/) for the native desktop runtime.
 - [xterm.js](https://xtermjs.org/) for terminal rendering.
 - [portable-pty](https://crates.io/crates/portable-pty) for pseudo-terminal integration.
-

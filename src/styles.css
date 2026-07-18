@@ -102,9 +102,13 @@ button { color: inherit; }
 
 .alert-display { position: absolute; z-index: 4; left: 276px; right: 261px; top: 8px; height: 30px; padding: 0 13px; display: flex; align-items: center; overflow: hidden; border: 2px solid #73797a; border-radius: 4px; color: #26382a; background: linear-gradient(165deg,#b9c5ad,#8f9f85 55%,#aab79e); box-shadow: inset 0 2px 5px rgba(31,42,31,.5),inset 0 -1px rgba(255,255,255,.42),0 1px #fff,0 0 0 1px #4c5253; font: 700 12px/1 "IBM Plex Mono",Consolas,monospace; letter-spacing: .12em; text-shadow: 0 1px rgba(220,236,210,.45); cursor: default; }
 .alert-display::after { content: ""; position: absolute; inset: 2px; border-radius: 2px; background: repeating-linear-gradient(0deg,transparent 0 2px,rgba(30,47,33,.045) 2px 3px); pointer-events: none; }
-.alert-display span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.alert-display span { position: relative; z-index: 2; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .alert-display-notice { color: #203f2a; }
 .alert-display-warning { color: #641c16; background: linear-gradient(165deg,#cbb49e,#ae9078 55%,#c2aa92); cursor: pointer; }
+.alert-display-busy::before { content: ""; position: absolute; z-index: 1; top: 2px; bottom: 2px; width: 28%; left: -32%; background: linear-gradient(90deg,transparent,rgba(227,246,218,.52),transparent); transform: skewX(-18deg); animation: lcd-sweep 1.25s linear infinite; pointer-events: none; }
+.alert-display-busy span { animation: lcd-text-pulse .8s ease-in-out infinite alternate; }
+@keyframes lcd-sweep { to { left: 108%; } }
+@keyframes lcd-text-pulse { to { opacity: .62; } }
 
 .device-edge {
   position: absolute; left: 41px; right: 41px; top: 809px; height: 55px; z-index: -1; border-radius: 0 0 36px 36px;
@@ -112,7 +116,7 @@ button { color: inherit; }
 }
 
 .top-keys { display: grid; grid-template-columns: 1fr 1fr 1.07fr; gap: 15px; grid-column: 2; }
-.bottom-keys { grid-column: 1 / 4; display: grid; grid-template-columns: 140px 135px 110px minmax(330px, 1fr) 211px; gap: 14px; align-items: stretch; }
+.bottom-keys { grid-column: 1 / 4; display: grid; grid-template-columns: 125px 120px 96px 145px minmax(210px, 1fr) 211px; gap: 12px; align-items: stretch; }
 
 .key {
   position: relative; min-width: 0; padding: 13px 15px 17px; border: 0; border-radius: 13px; cursor: pointer;

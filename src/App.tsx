@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -69,10 +70,9 @@ function App() {
   const [update, setUpdate] = useState("READY");
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [resumePickerOpen, setResumePickerOpen] = useState(false);
-  const [dialog, setDialog] = useState<"discard" | "settings" | "project" | null>(null);
+  const [dialog, setDialog] = useState<"discard" | "settings" | null>(null);
   const [listening, setListening] = useState(false);
   const [project, setProject] = useState(() => localStorage.getItem("claudedeck-project") || "");
-  const [projectDraft, setProjectDraft] = useState(() => localStorage.getItem("claudedeck-project") || "C:\\Users\\umuti\\Projects\\claude_control");
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [notice, setNotice] = useState("");
   const [claudeNotice, setClaudeNotice] = useState("");
@@ -87,8 +87,8 @@ function App() {
   const knobDragStart = useRef<number | null>(null);
   const speechRecognition = useRef<SpeechRecognitionLike | null>(null);
 
-  const cliConfig = (nextPermission: PermissionMode = permission, continueSession = false) => ({
-    project,
+  const cliConfig = (nextPermission: PermissionMode = permission, continueSession = false, nextProject = project) => ({
+    project: nextProject,
     permission: nextPermission === "AUTO" ? "bypassPermissions" : "default",
     model: cliModelName(model),
     effort: level.toLowerCase(),
@@ -111,6 +111,8 @@ function App() {
             ? task
             : "SYSTEM READY";
   const lcdWarning = Boolean(notice) || update === "FAILED" || task.endsWith("FAILED");
+  const lcdBusy = power === "STARTING" || power === "STOPPING" || update === "CHECKING" || update === "UPDATING"
+    || ["READING USAGE", "RETRYING", "RESUMING", "SWITCHING CONFIG", "SWITCHING PROJECT"].includes(task);
   const applyUsage = (metrics: UsageMetrics) => {
     setUsage((current) => {
       const next = {
@@ -126,16 +128,19 @@ function App() {
   const togglePower = async () => {
     if (power !== "OFF" && power !== "ON") return;
     const turningOn = power === "OFF";
-    if (turningOn && inTauri() && !project) {
-      await selectProject();
-      setNotice("Select a project, then press POWER again.");
-      return;
+    let targetProject = project;
+    if (turningOn && inTauri() && !targetProject) {
+      const selected = await chooseProject();
+      if (!selected) { setNotice("Select a project to start Claude Code."); return; }
+      targetProject = selected;
+      setProject(selected);
+      localStorage.setItem("claudedeck-project", selected);
     }
     setPower(turningOn ? "STARTING" : "STOPPING");
     setTask(turningOn ? "CLAUDE STARTING" : "CLAUDE STOPPING");
     try {
       if (inTauri()) {
-        if (turningOn) await invoke("start_claude", cliConfig());
+        if (turningOn) await invoke("start_claude", cliConfig(permission, false, targetProject));
         else await invoke("stop_claude");
       }
       setPower(turningOn ? "ON" : "OFF");
@@ -314,18 +319,35 @@ function App() {
     }
   };
 
-  const selectProject = async () => {
-    setProjectDraft(project || "C:\\Users\\umuti\\Projects\\claude_control");
-    setDialog("project");
+  const chooseProject = async () => {
+    if (!inTauri()) { setNotice("Folder selection is available in the desktop application."); return null; }
+    const selected = await open({ directory: true, multiple: false, defaultPath: project || undefined, title: "Select Claude Code project folder" });
+    return typeof selected === "string" ? selected : null;
   };
 
-  const saveProject = () => {
-    const selected = projectDraft.trim();
+  const selectProject = async () => {
+    const selected = await chooseProject();
     if (!selected) return;
+    const projectChanged = selected !== project;
     setProject(selected);
     localStorage.setItem("claudedeck-project", selected);
-    setTask("PROJECT SELECTED");
-    setDialog(null);
+    if (!projectChanged || !isOn || !inTauri()) {
+      setTask("PROJECT SELECTED");
+      return;
+    }
+    setPower("STARTING");
+    setTask("SWITCHING PROJECT");
+    try {
+      await invoke("stop_claude");
+      await invoke("start_claude", cliConfig(permission, false, selected));
+      setPower("ON");
+      setTerminalOpen(true);
+      setTask("PROJECT SWITCHED");
+    } catch (error) {
+      setPower("OFF");
+      setTask("PROJECT SWITCH FAILED");
+      setNotice(String(error));
+    }
   };
 
   const previewDiscard = async () => {
@@ -590,7 +612,7 @@ function App() {
 
         <div className="metal-panel">
           <div
-            className={`alert-display ${lcdWarning ? "alert-display-warning" : lcdMessage !== "SYSTEM READY" ? "alert-display-notice" : ""}`}
+            className={`alert-display ${lcdWarning ? "alert-display-warning" : lcdMessage !== "SYSTEM READY" ? "alert-display-notice" : ""} ${lcdBusy ? "alert-display-busy" : ""}`}
             onClick={() => setNotice("")}
             title={notice ? "Dismiss notification" : "ClaudeDeck status display"}
             role="status"
@@ -654,6 +676,7 @@ function App() {
             <KeyButton label="DISCARD" shortcut="DEL" className={dialog === "discard" ? "key-danger-active" : ""} disabled={!isOn} onClick={previewDiscard} />
             <KeyButton label="RETRY" shortcut="CTRL+R" className={task === "RETRYING" ? "key-busy" : ""} disabled={!isOn} onClick={() => { setTask("RETRYING"); if (isOn && inTauri()) void invoke("write_terminal", { input: "\u001b[A\r" }); }} />
             <KeyButton label="" shortcut="V HOLD" icon={<DeckIcon name="mic" />} className={listening ? "is-listening" : ""} disabled={!isOn} onClick={toggleMicrophone} />
+            <KeyButton label="PROJECT" shortcut="PATH" disabled={!isOn} onClick={() => void selectProject()} />
             <KeyButton label="RESUME" shortcut="CTRL+ENTER" className={`run-key ${resumePickerOpen ? "key-busy" : isOn ? "key-success" : ""}`} disabled={!isOn} onClick={() => void resumeClaude()} />
             <div className="usage-gauges" aria-label="Claude usage gauges">
               {[
@@ -679,8 +702,8 @@ function App() {
       {dialog && (
         <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setDialog(null); }}>
           <section className="modal" role="dialog" aria-modal="true">
-            <h2>{dialog === "discard" ? "Restore changes" : dialog === "project" ? "Project folder" : "ClaudeDeck settings"}</h2>
-            <p>{dialog === "discard" ? "Files changed by the last Claude task will be reviewed. Existing user changes are preserved." : dialog === "project" ? "Enter the full path of the folder where Claude Code will run." : "Manage project, model, voice, and appearance settings here."}</p>
+            <h2>{dialog === "discard" ? "Restore changes" : "ClaudeDeck settings"}</h2>
+            <p>{dialog === "discard" ? "Files changed by the last Claude task will be reviewed. Existing user changes are preserved." : "Manage project, model, voice, and appearance settings here."}</p>
             {dialog === "discard" && <>
               <div className="file-summary"><span>Total changes</span><strong>{changedFiles.length}</strong><span>Untracked files</span><strong>{changedFiles.filter((item) => item.startsWith("??")).length}</strong></div>
               <div className="changed-files">{changedFiles.length ? changedFiles.map((file) => <code key={file}>{file}</code>) : <span>No changes to restore.</span>}</div>
@@ -690,8 +713,7 @@ function App() {
               <span>Active project</span><strong>{project || "Not selected"}</strong>
               <span>Git</span><strong>{systemInfo?.gitAvailable ? "Ready" : "Not found"}</strong>
             </div>}
-            {dialog === "project" && <input className="project-input" value={projectDraft} onChange={(event) => setProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") saveProject(); }} autoFocus />}
-            <div className="modal-actions"><button onClick={() => setDialog(null)}>CANCEL</button><button className="primary" disabled={(dialog === "discard" && !changedFiles.some((item) => !item.startsWith("??"))) || (dialog === "project" && !projectDraft.trim())} onClick={dialog === "discard" ? restoreFiles : dialog === "project" ? saveProject : () => setDialog(null)}>{dialog === "discard" ? "RESTORE SAFELY" : dialog === "project" ? "SELECT PROJECT" : "OK"}</button></div>
+            <div className="modal-actions"><button onClick={() => setDialog(null)}>CANCEL</button><button className="primary" disabled={dialog === "discard" && !changedFiles.some((item) => !item.startsWith("??"))} onClick={dialog === "discard" ? restoreFiles : () => setDialog(null)}>{dialog === "discard" ? "RESTORE SAFELY" : "OK"}</button></div>
           </section>
         </div>
       )}
