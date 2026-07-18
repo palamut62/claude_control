@@ -74,6 +74,21 @@ button { color: inherit; }
   font-family: "IBM Plex Mono", Consolas, monospace; text-shadow: 0 0 9px currentColor;
   display: flex; flex-direction: column;
 }
+.display-glass.display-lcd {
+  border-color: #3f4742;
+  background: linear-gradient(165deg,#bdc8b2 0%,#93a188 52%,#aebba2 100%);
+  box-shadow: inset 0 3px 13px rgba(31,42,31,.68),inset 0 -2px rgba(238,247,229,.38),0 1px rgba(255,255,255,.09);
+}
+.display-glass.display-lcd::after {
+  content: ""; position: absolute; z-index: 5; inset: 12px; border-radius: 10px; pointer-events: none;
+  background: repeating-linear-gradient(0deg,transparent 0 3px,rgba(30,47,33,.055) 3px 4px),repeating-linear-gradient(90deg,transparent 0 4px,rgba(30,47,33,.025) 4px 5px);
+  box-shadow: inset 0 0 24px rgba(35,49,36,.3);
+}
+.display-glass.display-lcd .display-terminal {
+  background: #1e211d;
+  filter: invert(1) grayscale(1) sepia(.35) hue-rotate(48deg) saturate(.7) contrast(.88) brightness(.86);
+  text-shadow: none;
+}
 
 .metal-panel {
   position: absolute; top: 503px; left: 26px; right: 26px; height: 320px; padding: 43px 36px 28px;

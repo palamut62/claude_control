@@ -11,6 +11,7 @@ import iconSprite from "./assets/claudedeck-icons.svg?no-inline";
 type PowerState = "OFF" | "STARTING" | "ON" | "STOPPING";
 type Level = "LOW" | "HIGH";
 type PermissionMode = "ASK" | "AUTO";
+type DisplayMode = "NORMAL" | "LCD";
 type SpeechRecognitionLike = {
   lang: string; interimResults: boolean; continuous: boolean;
   start: () => void; stop: () => void;
@@ -63,6 +64,7 @@ function App() {
   const [models, setModels] = useState(fallbackModels);
   const [modelIndex, setModelIndex] = useState(() => Number(localStorage.getItem("claudedeck-model") || 2));
   const [permission, setPermission] = useState<PermissionMode>(() => (localStorage.getItem("claudedeck-permission") as PermissionMode) || "ASK");
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => (localStorage.getItem("claudedeck-display") as DisplayMode) || "NORMAL");
   const [task, setTask] = useState("CLAUDE CODE");
   const [update, setUpdate] = useState("READY");
   const [terminalOpen, setTerminalOpen] = useState(false);
@@ -208,6 +210,12 @@ function App() {
     void restartWithConfig(next);
   };
 
+  const toggleDisplayMode = () => {
+    const next: DisplayMode = displayMode === "NORMAL" ? "LCD" : "NORMAL";
+    setDisplayMode(next);
+    setTask(`DISPLAY ${next}`);
+  };
+
   const closeApplication = async () => {
     if (!inTauri()) return;
     try { await invoke("stop_claude"); } catch { /* Oturum yoksa pencere yine kapanır. */ }
@@ -347,7 +355,8 @@ function App() {
     localStorage.setItem("claudedeck-level", level);
     localStorage.setItem("claudedeck-model", String(modelIndex));
     localStorage.setItem("claudedeck-permission", permission);
-  }, [level, modelIndex, permission]);
+    localStorage.setItem("claudedeck-display", displayMode);
+  }, [level, modelIndex, permission, displayMode]);
 
   useEffect(() => {
     if (!inTauri()) return;
@@ -571,7 +580,7 @@ function App() {
             <DeckIcon name="close" />
           </button>
           <div className="display-housing">
-            <div className="display-glass">
+            <div className={`display-glass ${displayMode === "LCD" ? "display-lcd" : ""}`}>
               <div className="display-terminal">
                 {terminalOpen ? <div className="terminal-body" ref={terminalElement} /> : <div className="terminal-standby">— TERMINAL STANDBY —</div>}
               </div>
@@ -601,7 +610,12 @@ function App() {
               </button>
               <span>PERMISSION</span><b>{permission}</b>
             </div>
-            <span className="hardware-shortcut">F2</span>
+            <div className="mini-switch">
+              <button className={`toggle-switch ${displayMode === "LCD" ? "toggle-on" : ""}`} onClick={toggleDisplayMode} disabled={!isOn} aria-label={`Display mode ${displayMode}`} title="Display mode NORMAL / LCD">
+                <span className="toggle-track"><i /></span>
+              </button>
+              <span>DISPLAY</span><b>{displayMode}</b>
+            </div>
           </div>
 
           <div className="top-keys">
